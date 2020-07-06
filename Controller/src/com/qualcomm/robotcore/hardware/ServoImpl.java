@@ -61,7 +61,7 @@ public class ServoImpl implements Servo{
     }
 
     /**
-     * Get Internal Position -- FOR INTERNAL USE ONLY
+     * Get Internal util.Position -- FOR INTERNAL USE ONLY
      * @return
      */
     public synchronized double getInternalPosition(){ return this.position; }

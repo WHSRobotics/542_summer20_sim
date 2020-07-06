@@ -44,7 +44,7 @@ public class ArmBot extends VirtualBot {
     private DcMotorImpl[] motors = null;
     private DcMotorImpl armMotor = null;
 
-    //The BNO055 IMU. Note use of the BNO055IMUImpl class, rather than the BNO055IMU interface.
+    //The BNO055 util.IMU. Note use of the BNO055IMUImpl class, rather than the BNO055IMU interface.
     private BNO055IMUImpl imu = null;
 
     //Sensors.  Note again use of the ...Impl classes, rather than the interfaces.

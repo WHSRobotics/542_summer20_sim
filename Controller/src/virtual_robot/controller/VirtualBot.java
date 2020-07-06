@@ -151,7 +151,7 @@ public abstract class VirtualBot {
     }
 
     /**
-     * Stop all motors; De-initialize or close other hardware (e.g. gyro/IMU) as appropriate.
+     * Stop all motors; De-initialize or close other hardware (e.g. gyro/util.IMU) as appropriate.
      */
     public abstract void powerDownAndReset();
 

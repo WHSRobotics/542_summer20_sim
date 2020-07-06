@@ -66,7 +66,7 @@ public interface BNO055IMU extends HardwareDevice {
     }
 
     /**
-     * Close the IMU.
+     * Close the util.IMU.
      */
     void close();
 
