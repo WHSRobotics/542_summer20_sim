@@ -13,11 +13,11 @@ public class PathGenerator {
         return smoothedPath;
     }
 
-    public Coordinate[] generateCoordPath(Position[] targetPositions, double spacing, double weightSmooth) {
+    public util.Coordinate[] generateCoordPath(Position[] targetPositions, double spacing, double weightSmooth) {
         smoothedPath = smoothPath(injectPoints(targetPositions, spacing), weightSmooth, true);
-        Coordinate[] smoothedCoordPath = new Coordinate[smoothedPath.length];
+        util.Coordinate[] smoothedCoordPath = new util.Coordinate[smoothedPath.length];
         for(int i = 0; i < smoothedPath.length; i++) {
-            smoothedCoordPath[i] = new Coordinate(smoothedPath[i].getX(), smoothedPath[i].getY(), smoothedPath[i].getHeading());
+            smoothedCoordPath[i] = new util.Coordinate(smoothedPath[i].getX(), smoothedPath[i].getY(), smoothedPath[i].getHeading());
         }
 
         int numAnchorHeadings = 0;
@@ -52,14 +52,14 @@ public class PathGenerator {
         ArrayList<Position> morePoints = new ArrayList<Position>();
 
         for (int i = 0; i < orig.length - 1; i++) {
-            Position segment = Functions.Positions.subtract(orig[i+1], orig[i]);
+            Position segment = util.Functions.Positions.subtract(orig[i+1], orig[i]);
             double magnitude = segment.getMagnitude();
             int numSegmentsBetween = (int) Math.round(magnitude / spacing);
             segment.scale((double) 1 / numSegmentsBetween);
 
             morePoints.add(orig[i]);
             for (int j = 1; j < numSegmentsBetween; j++) {
-                morePoints.add(Functions.Positions.add(orig[i], Functions.Positions.scale(j, segment)));
+                morePoints.add(util.Functions.Positions.add(orig[i], util.Functions.Positions.scale(j, segment)));
             }
         }
         morePoints.add(orig[orig.length - 1]);
@@ -70,13 +70,13 @@ public class PathGenerator {
     private Position[] smoothPath(Position[] orig, double weightSmooth, boolean includeHeadings) {
         Position[] smoothed;
         if (includeHeadings) {
-            smoothed = new Coordinate[orig.length];
+            smoothed = new util.Coordinate[orig.length];
         } else {
             smoothed = new Position[orig.length];
         }
         for (int i = 0; i < orig.length; i++) {
             if (includeHeadings) {
-                smoothed[i] = new Coordinate(orig[i].getX(), orig[i].getY(), orig[i].getHeading());
+                smoothed[i] = new util.Coordinate(orig[i].getX(), orig[i].getY(), orig[i].getHeading());
             } else {
                 smoothed[i] = new Position(orig[i].getX(), orig[i].getY());
             }
@@ -161,7 +161,7 @@ public class PathGenerator {
         for (int i = smoothedPath.length - 2; i >= 0; i--) { // works backwards as we need to know last point's velocity to calculate current point's
 
             // distance from this current point to next point
-            double distance = Functions.distanceFormula(smoothedPath[i].getX(), smoothedPath[i].getY(), smoothedPath[i + 1].getX(), smoothedPath[i + 1].getY());
+            double distance = util.Functions.distanceFormula(smoothedPath[i].getX(), smoothedPath[i].getY(), smoothedPath[i + 1].getX(), smoothedPath[i + 1].getY());
 
             // finds the smaller value between the velocity constant / the curvature and a new target velocity
             double targetVelocity = Math.min(Math.min(pathMaxVelocity, k / targetCurvatures[i]), Math.sqrt(Math.pow(targetVelocities[i + 1], 2) + 2 * maxAcceleration * distance));
