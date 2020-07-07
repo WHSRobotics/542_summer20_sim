@@ -12,15 +12,19 @@ import util.WHSRobotImpl;
 public class EstimatePositionTest extends OpMode {
 
     WHSRobotImpl robot;
-    double maxAccel = 0;
+    double maxAccel = 0.0;
     double currentAccel;
-    double lastTime = 0;
+    ElapsedTime elapsedTime = new ElapsedTime();
+    double lastTime = 0.0;
+    double lOdo = 0.0;
+    double rOdo = 0.0;
+    double cOdo = 0.0;
 
     @Override
     public void init() {
         robot = new WHSRobotImpl(hardwareMap);
         robot.setInitialCoordinate(new Coordinate(0, 0, 90));
-        lastTime = time;
+        lastTime = elapsedTime.seconds();
     }
 
     @Override
@@ -40,15 +44,11 @@ public class EstimatePositionTest extends OpMode {
         telemetry.addData("X", robot.getCoordinate().getX());
         telemetry.addData("Y", robot.getCoordinate().getY());
         telemetry.addData("Heading", robot.getCoordinate().getHeading());
-        telemetry.addData("Odometry L Delta", robot.odometry.getLWheelDelta());
-        telemetry.addData("Odometry R Delta", robot.odometry.getRWheelDelta());
-        telemetry.addData("Odometry C Delta", robot.odometry.getCWheelDelta());
-        telemetry.addData("Odometry L MM", robot.odometry.getLWheelCount()/Odometry.ticksPerMM);
-        telemetry.addData("Odometry R MM", robot.odometry.getRWheelCount()/Odometry.ticksPerMM);
-        telemetry.addData("Odometry C MM", robot.odometry.getCWheelCount()/Odometry.ticksPerMM);
-        telemetry.addData("Odo radians/cycle", Math.toDegrees(((robot.odometry.getRWheelDelta() - robot.odometry.getLWheelDelta())/robot.odometry.ticksPerMM) / (robot.odometry.robotOdometryRadius*2)));
-        telemetry.addData("Delta time", time-lastTime);
-        lastTime=time;
+        telemetry.addData("Odometry L MM", robot.odometryWrapper.odometry.getLWheelCount()/Odometry.ticksPerMM);
+        telemetry.addData("Odometry R MM", robot.odometryWrapper.odometry.getRWheelCount()/Odometry.ticksPerMM);
+        telemetry.addData("Odometry C MM", robot.odometryWrapper.odometry.getCWheelCount()/Odometry.ticksPerMM);
+        telemetry.addData("Delta time", elapsedTime.seconds()-lastTime);
+        lastTime=elapsedTime.seconds();
         telemetry.addData("FL Position", robot.drivetrain.frontLeft.getCurrentPosition());
         telemetry.addData("BL Position", robot.drivetrain.backLeft.getCurrentPosition());
         telemetry.addData("FR Position", robot.drivetrain.frontRight.getCurrentPosition());

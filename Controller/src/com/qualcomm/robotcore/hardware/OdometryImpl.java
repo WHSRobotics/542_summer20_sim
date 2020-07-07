@@ -32,20 +32,4 @@ public class OdometryImpl implements Odometry {
         return encoderCounts;
     }
 
-    public synchronized int getLWheelDelta() {
-        return encoderDeltas[0];
-    }
-
-    public synchronized int getRWheelDelta() {
-        return encoderDeltas[1];
-    }
-
-    public synchronized int getCWheelDelta() {
-        return encoderDeltas[2];
-    }
-
-    public synchronized int[] getAllWheelDeltas() {
-        return encoderDeltas;
-    }
-
 }

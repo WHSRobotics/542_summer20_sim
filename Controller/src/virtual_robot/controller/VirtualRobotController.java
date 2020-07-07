@@ -530,6 +530,7 @@ public class VirtualRobotController {
         if (!odometries.isEmpty()) {
             sb.append("\n Odometry:");
             for (String odometry : odometries) sb.append("\n   " + odometry);
+        }
         txtTelemetry.setText(sb.toString());
     }
 

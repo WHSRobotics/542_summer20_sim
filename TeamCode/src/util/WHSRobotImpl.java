@@ -11,7 +11,8 @@ public class WHSRobotImpl{
 
     public util.Drivetrain drivetrain;
     public util.IMU imu;
-    public Odometry odometry;
+    //public Odometry odometry;
+    public OdometryWrapper odometryWrapper;
 
     util.Coordinate currentCoord;
     private double targetHeading; //field frame
@@ -48,8 +49,9 @@ public class WHSRobotImpl{
     private boolean driveToTargetInProgress = false;
     private boolean rotateToTargetInProgress = false;
 
-    private double[] encoderDeltas = {0.0, 0.0};
+    private double[] encoderDeltas = {0.0, 0.0, 0.0};
     private double[] encoderValues = {0.0, 0.0};
+    private int[] odometryEncoderDeltas = {0, 0, 0};
     private double robotX;
     private double robotY;
     private double distance;
@@ -78,7 +80,8 @@ public class WHSRobotImpl{
         drivetrain = new util.Drivetrain(hardwareMap);
         drivetrain.resetEncoders();
         imu = new util.IMU(hardwareMap);
-        odometry = hardwareMap.odometry.get("odometry");
+        //odometry = hardwareMap.odometry.get("odometry");
+        odometryWrapper = new OdometryWrapper(hardwareMap);
         currentCoord = new util.Coordinate(0.0, 0.0, 0.0);
     }
 
@@ -220,9 +223,10 @@ public class WHSRobotImpl{
         //currentCoord.setHeading(/*util.Functions.normalizeAngle(Math.toDegrees(drivetrain.lrWheelConverter.encToMM(drivetrain.getAllEncoderPositions()[1]-drivetrain.getAllEncoderPositions()[0])/(util.Drivetrain.getTrackWidth())))*/ imu.getHeading());
 
         //For sim
-        double deltaXWheels = (-odometry.getLWheelDelta()/odometry.ticksPerMM + odometry.getRWheelDelta()/odometry.ticksPerMM)/2;
-        double deltaYWheel = odometry.getCWheelDelta()/odometry.ticksPerMM;
-        double deltaTheta = ((odometry.getRWheelDelta() - odometry.getLWheelDelta())/odometry.ticksPerMM) / (odometry.robotOdometryRadius*2); // in radians
+        odometryEncoderDeltas = odometryWrapper.calculateOdometryDeltas();
+        double deltaXWheels = (-odometryEncoderDeltas[0]/Odometry.ticksPerMM + odometryEncoderDeltas[1]/Odometry.ticksPerMM)/2;
+        double deltaYWheel = odometryEncoderDeltas[2]/Odometry.ticksPerMM;
+        double deltaTheta = ((odometryEncoderDeltas[1] - odometryEncoderDeltas[0])/Odometry.ticksPerMM) / (Odometry.robotOdometryRadius*2); // in radians
 
         /*double deltaXWheels = (drivetrain.lWheelConverter.encToMM(encoderDeltas[0]) + drivetrain.rWheelConverter.encToMM(encoderDeltas[1]))/2;
         double deltaYWheel = drivetrain.backWheelConverter.encToMM(encoderDeltas[2]);

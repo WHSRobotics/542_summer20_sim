@@ -19,10 +19,4 @@ public interface Odometry extends HardwareDevice {
     int getCWheelCount();
     int[] getAllWheelCounts();
 
-    int getLWheelDelta();
-    int getRWheelDelta();
-    int getCWheelDelta();
-
-    int[] getAllWheelDeltas();
-
 }
