@@ -526,6 +526,10 @@ public class VirtualRobotController {
             sb.append("\n Distance Sensors:");
             for (String distance : distanceSensors) sb.append("\n   " + distance);
         }
+        Set<String> odometries = hardwareMap.odometry.keySet();
+        if (!odometries.isEmpty()) {
+            sb.append("\n Odometry:");
+            for (String odometry : odometries) sb.append("\n   " + odometry);
         txtTelemetry.setText(sb.toString());
     }
 

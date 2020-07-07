@@ -68,6 +68,10 @@ public class HardwareMap {
     public final DeviceMapping<CRServo> crservo = new DeviceMapping(CRServo.class);
 
     /**
+     * Map of all Odometry devices in this HardwareMap.
+     */
+    public final DeviceMapping<Odometry> odometry = new DeviceMapping(Odometry.class);
+    /**
      * Map of all hardware devices in this HardwareMap
      */
     private Map<String, List<HardwareDevice>> allDevicesMap = new HashMap<>(15);
@@ -92,6 +96,7 @@ public class HardwareMap {
         if (device instanceof GyroSensor) gyroSensor.put(deviceName, (GyroSensor)device);
         if (device instanceof Servo) servo.put(deviceName, (Servo)device);
         if (device instanceof CRServo) crservo.put(deviceName, (CRServo)device);
+        if (device instanceof Odometry) odometry.put(deviceName, (Odometry) device);
     }
 
     /**
