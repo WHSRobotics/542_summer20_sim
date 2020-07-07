@@ -1,6 +1,7 @@
 package util;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Odometry;
 
 /**
  * Created by Jason on 10/20/2017.
@@ -10,7 +11,7 @@ public class WHSRobotImpl{
 
     public util.Drivetrain drivetrain;
     public util.IMU imu;
-
+    public Odometry odometry;
 
     util.Coordinate currentCoord;
     private double targetHeading; //field frame
@@ -77,6 +78,7 @@ public class WHSRobotImpl{
         drivetrain = new util.Drivetrain(hardwareMap);
         drivetrain.resetEncoders();
         imu = new util.IMU(hardwareMap);
+        odometry = hardwareMap.odometry.get("odometry");
         currentCoord = new util.Coordinate(0.0, 0.0, 0.0);
     }
 
@@ -213,13 +215,18 @@ public class WHSRobotImpl{
         }
     }*/
     public void deadWheelEstimateCoordinate() {
-        estimateHeading();
-        encoderDeltas = drivetrain.getAllEncoderDelta();
+        //estimateHeading();
+        //encoderDeltas = drivetrain.getAllEncoderDelta();
         //currentCoord.setHeading(/*util.Functions.normalizeAngle(Math.toDegrees(drivetrain.lrWheelConverter.encToMM(drivetrain.getAllEncoderPositions()[1]-drivetrain.getAllEncoderPositions()[0])/(util.Drivetrain.getTrackWidth())))*/ imu.getHeading());
 
-        double deltaXWheels = (drivetrain.lWheelConverter.encToMM(encoderDeltas[0]) + drivetrain.rWheelConverter.encToMM(encoderDeltas[1]))/2;
+        //For sim
+        double deltaXWheels = (-odometry.getLWheelDelta()/odometry.ticksPerMM + odometry.getRWheelDelta()/odometry.ticksPerMM)/2;
+        double deltaYWheel = odometry.getCWheelDelta()/odometry.ticksPerMM;
+        double deltaTheta = ((odometry.getRWheelDelta() - odometry.getLWheelDelta())/odometry.ticksPerMM) / (odometry.robotOdometryRadius*2); // in radians
+
+        /*double deltaXWheels = (drivetrain.lWheelConverter.encToMM(encoderDeltas[0]) + drivetrain.rWheelConverter.encToMM(encoderDeltas[1]))/2;
         double deltaYWheel = drivetrain.backWheelConverter.encToMM(encoderDeltas[2]);
-        double deltaTheta = (drivetrain.rWheelConverter.encToMM(encoderDeltas[1]) - drivetrain.lWheelConverter.encToMM(encoderDeltas[0]))/(util.Drivetrain.getTrackWidth());
+        double deltaTheta = (drivetrain.rWheelConverter.encToMM(encoderDeltas[1]) - drivetrain.lWheelConverter.encToMM(encoderDeltas[0]))/(util.Drivetrain.getTrackWidth());*/
         /*double deltaXWheels = drivetrain.lrWheelConverter.encToMM((encoderDeltas[0] + encoderDeltas[1])/2);
         double deltaYWheel = drivetrain.backWheelConverter.encToMM(encoderDeltas[2]);
         double deltaTheta = drivetrain.lrWheelConverter.encToMM(encoderDeltas[1] - encoderDeltas[0])/(util.Drivetrain.getTrackWidth());
@@ -234,6 +241,7 @@ public class WHSRobotImpl{
         util.Position fieldVector = util.Functions.body2field(bodyVector, currentCoord);
         currentCoord.addX(fieldVector.getX());
         currentCoord.addY(fieldVector.getY());
+        currentCoord.setHeading(Functions.normalizeAngle(currentCoord.getHeading() + Math.toDegrees(deltaTheta)));
         //currentCoord.setPos(util.Functions.Positions.add(fieldVector, currentCoord));
     }
 
