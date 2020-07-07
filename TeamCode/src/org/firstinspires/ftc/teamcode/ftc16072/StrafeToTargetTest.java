@@ -17,21 +17,22 @@ public class StrafeToTargetTest extends OpMode {
     double velocityConstant = 3.0;
     double lookaheadDistance = 200;
     Coordinate startingCoordinate = new Coordinate(0,0,0);
-    Coordinate p1 = new Coordinate(0,1200, 90);
+    Coordinate p1 = new Coordinate(0,2400, 90);
     Coordinate p2 = new Coordinate(0,1800,0);
 
     Coordinate[] positions = {startingCoordinate, p1};
     @Override
     public void init() {
         robot = new WHSRobotImpl(hardwareMap);
-        strafe1 = new StrafeToTarget(kP, kV,kA,positions, 80, .7, 0.01, velocityConstant, lookaheadDistance, 600);
+        strafe1 = new StrafeToTarget(kP, kV,kA,positions, 80, .7, 0.01, velocityConstant, lookaheadDistance, 800);
         robot.setInitialCoordinate(startingCoordinate);
     }
 
     @Override
     public void loop() {
         robot.estimateHeading();
-        robot.estimatePosition();
+//        robot.estimatePosition();
+        robot.mecanumEstimatePosition();
         //robot.estimateHeading();
         motorPowers = strafe1.calculateMotorPowers(robot.getCoordinate());
         robot.drivetrain.operate(motorPowers);

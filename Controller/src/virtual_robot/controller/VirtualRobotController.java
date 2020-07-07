@@ -573,7 +573,7 @@ public class VirtualRobotController {
     public class DistanceSensorImpl implements DistanceSensor {
         private double distanceMM = distanceOutOfRange;
         private static final double MIN_DISTANCE = 50; //mm
-        private static final double MAX_DISTANCE = 1000; //mm
+        private static final double MAX_DISTANCE = 5000; //mm
         private static final double MAX_OFFSET = 7.0 * Math.PI / 180.0;
 
         public synchronized double getDistance(DistanceUnit distanceUnit){

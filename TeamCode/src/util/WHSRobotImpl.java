@@ -1,5 +1,6 @@
 package util;
 
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Odometry;
 
@@ -7,7 +8,7 @@ import com.qualcomm.robotcore.hardware.Odometry;
  * Created by Jason on 10/20/2017.
  */
 
-public class WHSRobotImpl{
+public class WHSRobotImpl {
 
     public util.Drivetrain drivetrain;
     public util.IMU imu;
@@ -76,6 +77,11 @@ public class WHSRobotImpl{
         DRIVE_KP = util.RobotConstants.D_KP;
         DRIVE_KI = util.RobotConstants.D_KI;
         DRIVE_KD = util.RobotConstants.D_KD;
+
+        leftDistance = hardwareMap.get(VirtualRobotController.DistanceSensorImpl.class, "left_distance");
+        rightDistance = hardwareMap.get(VirtualRobotController.DistanceSensorImpl.class, "right_distance");
+        frontDistance = hardwareMap.get(VirtualRobotController.DistanceSensorImpl.class, "front_distance");
+        backDistance = hardwareMap.get(VirtualRobotController.DistanceSensorImpl.class, "back_distance");
 
         drivetrain = new util.Drivetrain(hardwareMap);
         drivetrain.resetEncoders();
@@ -204,19 +210,19 @@ public class WHSRobotImpl{
         currentCoord.setY(robotY);
     }
 
-/*    public void retractDeadwheelPickup(){
-        if(firstRetractionLoop){
-            deadWheelPickupTimer.set(deadWheelPickupDelay);
-            firstRetractionLoop = false;
-        }
-        if (!deadWheelPickupTimer.isExpired()) {
-            deadWheelPickup.setPosition(DeadWheelPickup.DeadWheelPickupPosition.UP);
-            drivetrain.operate(-.2, -.2);
-        }else{
-            drivetrain.operate(0,0);
-            deadwheelRetracted = true;
-        }
-    }*/
+    /*    public void retractDeadwheelPickup(){
+            if(firstRetractionLoop){
+                deadWheelPickupTimer.set(deadWheelPickupDelay);
+                firstRetractionLoop = false;
+            }
+            if (!deadWheelPickupTimer.isExpired()) {
+                deadWheelPickup.setPosition(DeadWheelPickup.DeadWheelPickupPosition.UP);
+                drivetrain.operate(-.2, -.2);
+            }else{
+                drivetrain.operate(0,0);
+                deadwheelRetracted = true;
+            }
+        }*/
     public void deadWheelEstimateCoordinate() {
         //estimateHeading();
         //encoderDeltas = drivetrain.getAllEncoderDelta();
@@ -291,9 +297,16 @@ public class WHSRobotImpl{
     }*/
 
     public void mecanumEstimatePosition() {
-        encoderDeltas = drivetrain.getMecanumEncoderDelta();
-        double theta = Math.atan(encoderDeltas[1]/encoderDeltas[0]);
+//        encoderDeltas = drivetrain.getMecanumEncoderDelta();
+//        double theta = Math.atan(encoderDeltas[1] / encoderDeltas[0]);
 
+        double[] allEncoderDeltas = drivetrain.getAllEncoderDelta();
+        double deltaXRobot = (Drivetrain.encToMM(allEncoderDeltas[2]) + Drivetrain.encToMM(allEncoderDeltas[3])) / 2;
+        double deltaYRobot = (Drivetrain.encToMM(allEncoderDeltas[1]) - Drivetrain.encToMM(allEncoderDeltas[3])) / 2;
+
+        Position fieldDelta = Functions.body2field(new Position(deltaXRobot, deltaYRobot), currentCoord);
+        currentCoord.addX(fieldDelta.getX());
+        currentCoord.addY(fieldDelta.getY());
     }
 
     public void estimateHeading() {
@@ -319,23 +332,78 @@ public class WHSRobotImpl{
         return currentCoord;
     }
 
-    public void estimateCoordinate(){
+    public void estimateCoordinate() {
         double[] currentEncoderValues = drivetrain.getLRAvgEncoderPosition();
         encoderDeltas[0] = currentEncoderValues[0] - encoderValues[0];
         encoderDeltas[1] = currentEncoderValues[1] - encoderValues[1];
-        double currentHeading = util.Functions.normalizeAngle(Math.toDegrees(drivetrain.encToMM((currentEncoderValues[1] - currentEncoderValues[0])/2/ util.Drivetrain.getTrackWidth())) + imu.getImuBias()); //-180 to 180 deg
+        double currentHeading = util.Functions.normalizeAngle(Math.toDegrees(drivetrain.encToMM((currentEncoderValues[1] - currentEncoderValues[0]) / 2 / util.Drivetrain.getTrackWidth())) + imu.getImuBias()); //-180 to 180 deg
         currentCoord.setHeading(currentHeading); //updates global variable
 
-        double deltaS = drivetrain.encToMM((encoderDeltas[0] + encoderDeltas[1])/2);
-        double deltaHeading = Math.toDegrees(drivetrain.encToMM((encoderDeltas[1] - encoderDeltas[0])/ util.Drivetrain.getTrackWidth()));
-        robotX += deltaS * util.Functions.cosd(lastKnownHeading + deltaHeading/2);
-        robotY += deltaS * util.Functions.sind(lastKnownHeading + deltaHeading/2);
+        double deltaS = drivetrain.encToMM((encoderDeltas[0] + encoderDeltas[1]) / 2);
+        double deltaHeading = Math.toDegrees(drivetrain.encToMM((encoderDeltas[1] - encoderDeltas[0]) / util.Drivetrain.getTrackWidth()));
+        robotX += deltaS * util.Functions.cosd(lastKnownHeading + deltaHeading / 2);
+        robotY += deltaS * util.Functions.sind(lastKnownHeading + deltaHeading / 2);
 
         currentCoord.setX(robotX);
         currentCoord.setY(robotY);
         encoderValues[0] = currentEncoderValues[0];
         encoderValues[1] = currentEncoderValues[1];
         lastKnownHeading = currentCoord.getHeading();
+    }
+
+    public double[] simGetDistances() {
+        double[] distances = {leftDistance.getDistance(DistanceUnit.MM), rightDistance.getDistance(DistanceUnit.MM), frontDistance.getDistance(DistanceUnit.MM), backDistance.getDistance(DistanceUnit.MM)};
+        for (double dist : distances) {
+            dist += 228.6;
+        }
+        return distances;
+    }
+
+    public void simEstimateCoordinate() {
+        double heading = imu.getHeading() + imu.getImuBias();
+        while (heading > 360) {
+            heading -= 360;
+        }
+        currentCoord.setHeading(Functions.normalizeAngle(heading));
+        double[] distances = simGetDistances();
+
+        boolean robotL = false;
+        boolean robotF = false;
+        if (heading % 45 == 0) {
+            //idk
+        } else if (Math.floor(heading / 45) % 2 == 0) {
+            if (distances[2] < distances[3]) { // F<B
+                robotL = true;
+            }
+            if (distances[0] > distances[1]) { // L>R
+                robotF = true;
+            }
+        } else {
+            if (distances[2] > distances[3]) { // F>B
+                robotL = true;
+            }
+            if (distances[0] < distances[1]) { // L<R
+                robotF = true;
+            }
+        }
+
+        double angle = heading;
+        while (angle >= 90) {
+            angle -= 90;
+        }
+        double x = robotF ? 1828.8 - distances[2] * Functions.cosd(angle) : 1828.8 - distances[1] * Functions.cosd(angle);
+        double y = robotL ? 1828.8 - distances[0] * Functions.cosd(angle) : 1828.8 - distances[1] * Functions.cosd(angle);
+
+        if (heading % 45 == 0) {
+
+        } else if (heading > 45 && heading < 135 || (heading > 225 && heading < 315)) {
+            robotX = y;
+            robotY = x;
+        } else {
+            robotX = x;
+            robotY = y;
+        }
+        currentCoord.setPos(new Position(robotX, robotY));
     }
 }
 

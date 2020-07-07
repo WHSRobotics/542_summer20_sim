@@ -7,6 +7,7 @@ public class StrafeToTarget {
     private static final double MAXIMUM_ACCELERATION = util.SwerveConstants.MAX_ACCELERATION; // mm/s^2
     private static final double MAXIMUM_VELOCITY = util.SwerveConstants.MAX_VELOCITY;
     private static final double MAXIMUM_ANGULAR_ACCELERATION = util.SwerveConstants.MAX_ANGULAR_ACCELERATION;
+    private static final double MAXIMUM_ANGULAR_VELOCITY = SwerveConstants.MAX_ANGULAR_VELOCITY;
     private double pathMaximumVelocity;
     public int lastClosestPointIndex = 0;
     public int lastClosestHeadingIndex = 0;
@@ -28,7 +29,8 @@ public class StrafeToTarget {
     private double[] currentTargetWheelVelocities = {0.0, 0.0, 0.0, 0.0};
     private double[] lastTargetWheelVelocities = {0.0, 0.0, 0.0, 0.0};
     private double lastTime;
-    private RateLimiter targetVelocityRateLimiter;
+    private RateLimiter targetTangentialVelocityRateLimiter = new RateLimiter(MAXIMUM_ACCELERATION, 0);
+    private RateLimiter targetAngularVelocityRateLimiter = new RateLimiter(MAXIMUM_ANGULAR_ACCELERATION, 0);
     private double kP;
     private double kV;
     private double kA;
@@ -49,13 +51,12 @@ public class StrafeToTarget {
         this.kA = kA;
         this.angularVelocity = angularVelocity;
         this.lookaheadDistance = lookaheadDistance;
-        targetVelocityRateLimiter = new RateLimiter(MAXIMUM_ACCELERATION, 0);
         trackWidth = util.Drivetrain.getTrackWidth();
         wheelBase = util.Drivetrain.getWheelBase();
         util.PathGenerator pathGenerator = new util.PathGenerator();
         smoothedPath = pathGenerator.generateCoordPath(targetPositions, spacing, weightSmooth);
         targetVelocities = pathGenerator.calculateTargetVelocities(velocityConstant, pathMaximumVelocity, MAXIMUM_ACCELERATION);
-        //targetAngularVelocities = pathGenerator.calculateTargetAngularVelocities(MAXIMUM_ANGULAR_ACCELERATION);
+        //targetAngularVelocities = pathGenerator.calculateTargetAngularVelocities(MAXIMUM_ANGULAR_ACCELERATION, MAXIMUM_ANGULAR_VELOCITY);
         targetAngularVelocities = new double[smoothedPath.length];
         for (int i = smoothedPath.length-2; i >= 0; i--){
             double deltaTheta = smoothedPath[i+1].getHeading() - smoothedPath[i].getHeading();
@@ -63,7 +64,7 @@ public class StrafeToTarget {
             if (deltaTheta < 0){
                 sign = -1;
             }
-            targetAngularVelocities[i] = sign * Math.sqrt((targetAngularVelocities[i+1] * targetAngularVelocities[i+1]) + 2 * MAXIMUM_ANGULAR_ACCELERATION * Math.abs(deltaTheta));
+            targetAngularVelocities[i] = sign * (Math.min(MAXIMUM_ANGULAR_VELOCITY, Math.sqrt((targetAngularVelocities[i+1] * targetAngularVelocities[i+1]) + 2 * MAXIMUM_ANGULAR_ACCELERATION * Math.abs(deltaTheta))));
         }
         lastTime = System.nanoTime() / 1E9;
     }
@@ -90,17 +91,17 @@ public class StrafeToTarget {
         lookaheadPoint = util.Functions.Positions.add(calculatedTStartPoint, util.Functions.Positions.scale(currentTValue, util.Functions.Positions.subtract(calculatedTEndPoint, calculatedTStartPoint)));
 
         int indexOfClosestPoint = calculateIndexOfClosestPoint(smoothedPath);
-        int indexOfClosestHeading = calculateIndexOfClosestHeading();
+        //int indexOfClosestHeading = calculateIndexOfClosestHeading();
 
         Position vectorToLookaheadPoint = util.Functions.Positions.subtract(lookaheadPoint, currentCoord);
         vectorToLookaheadPoint = util.Functions.field2body(vectorToLookaheadPoint, currentCoord);
         double angleToLookaheadPoint = Math.toDegrees(Math.atan2(vectorToLookaheadPoint.getY(), vectorToLookaheadPoint.getX()));
         angleToLookaheadPointDebug = angleToLookaheadPoint;
 
-        headingController.calculate(targetAngularVelocities[indexOfClosestHeading] - angularVelocity);
+        headingController.calculate(smoothedPath[indexOfClosestPoint].getHeading() - currentCoord.getHeading());//(targetAngularVelocities[indexOfClosestHeading] - angularVelocity);
         double headingFeedback = headingController.getOutput();
 
-        currentTargetWheelVelocities = calculateTargetWheelVelocities(targetVelocities[indexOfClosestPoint], angleToLookaheadPoint, targetAngularVelocities[indexOfClosestHeading]);
+        currentTargetWheelVelocities = calculateTargetWheelVelocities(targetVelocities[indexOfClosestPoint], angleToLookaheadPoint, targetAngularVelocities[indexOfClosestPoint] + headingFeedback);
 
         double deltaTime = System.nanoTime() / 1E9 - lastTime;
         double[] targetWheelAccelerations = new double[4];
@@ -116,7 +117,7 @@ public class StrafeToTarget {
             double[] feedForwardVel = {kV * currentTargetWheelVelocities[0], kV * currentTargetWheelVelocities[1], kV * currentTargetWheelVelocities[2], kV * currentTargetWheelVelocities[3]};
             double[] feedForwardAccel = {kA * targetWheelAccelerations[0], kA * targetWheelAccelerations[1], kA * targetWheelAccelerations[2], kA * targetWheelAccelerations[3]};
             double[] feedForward = {feedForwardVel[0] + feedForwardAccel[0], feedForwardVel[1] + feedForwardAccel[1], feedForwardVel[2] + feedForwardAccel[2], feedForwardVel[3] + feedForwardAccel[3]};
-            double[] motorPowers = {util.Functions.constrain(feedBack[0] + feedForward[0] - headingFeedback, -1, 1), util.Functions.constrain(feedBack[1] + feedForward[1] + headingFeedback, -1, 1), util.Functions.constrain(feedBack[2] + feedForward[2] - headingFeedback, -1, 1), util.Functions.constrain(feedBack[3] + feedForward[3] + headingFeedback, -1, 1)};
+            double[] motorPowers = {util.Functions.constrain(feedBack[0] + feedForward[0]/* - headingFeedback*/, -1, 1), util.Functions.constrain(feedBack[1] + feedForward[1]/* + headingFeedback*/, -1, 1), util.Functions.constrain(feedBack[2] + feedForward[2]/* - headingFeedback*/, -1, 1), util.Functions.constrain(feedBack[3] + feedForward[3]/* + headingFeedback*/, -1, 1)};
             lastTargetWheelVelocities = currentTargetWheelVelocities;
             inProgress = true;
             return motorPowers;
@@ -218,15 +219,16 @@ public class StrafeToTarget {
     }
 
     public double[] calculateTargetWheelVelocities(double targetVelocity, double angleToLookaheadPoint, double targetAngularVelocity) {
-        targetAngularVelocity = Math.toRadians(targetAngularVelocity);
-        double targetVelocityX = targetVelocity * util.Functions.cosd(angleToLookaheadPoint);
-        double targetVelocityY = targetVelocity * util.Functions.sind(angleToLookaheadPoint);
+        double rateLimitedTargetTangentialVelocity = targetTangentialVelocityRateLimiter.calculateOutput(targetVelocity);
+        double rateLimitedTargetAngularVelocity = Math.toRadians(targetAngularVelocityRateLimiter.calculateOutput(targetAngularVelocity));
+        double targetVelocityX = rateLimitedTargetTangentialVelocity * util.Functions.cosd(angleToLookaheadPoint);
+        double targetVelocityY = rateLimitedTargetTangentialVelocity * util.Functions.sind(angleToLookaheadPoint);
         double k = (trackWidth + wheelBase) / 2;
 
-        double vFL = targetVelocityX - targetVelocityY - k * targetAngularVelocity;
-        double vFR = targetVelocityX + targetVelocityY + k * targetAngularVelocity;
-        double vBL = targetVelocityX + targetVelocityY - k * targetAngularVelocity;
-        double vBR = targetVelocityX - targetVelocityY + k * targetAngularVelocity;
+        double vFL = targetVelocityX - targetVelocityY - k * rateLimitedTargetAngularVelocity;
+        double vFR = targetVelocityX + targetVelocityY + k * rateLimitedTargetAngularVelocity;
+        double vBL = targetVelocityX + targetVelocityY - k * rateLimitedTargetAngularVelocity;
+        double vBR = targetVelocityX - targetVelocityY + k * rateLimitedTargetAngularVelocity;
 
         return new double[]{vFL, vFR, vBL, vBR};
     }
