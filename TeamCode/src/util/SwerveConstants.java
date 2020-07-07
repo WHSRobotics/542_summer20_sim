@@ -11,7 +11,7 @@ public class SwerveConstants {
     public static double velocityConstant = 2.0;
     public static double MAX_ANGULAR_ACCELERATION = 25;//5.2;
     public static double MAX_ANGULAR_VELOCITY = 108;
-    public static double hKP = 0.1;
+    public static double hKP = 10;
     public static double hKI = 0.0;
     public static double hKD = 0.0;
 

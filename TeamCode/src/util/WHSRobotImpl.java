@@ -78,16 +78,11 @@ public class WHSRobotImpl {
         DRIVE_KI = util.RobotConstants.D_KI;
         DRIVE_KD = util.RobotConstants.D_KD;
 
-        leftDistance = hardwareMap.get(VirtualRobotController.DistanceSensorImpl.class, "left_distance");
-        rightDistance = hardwareMap.get(VirtualRobotController.DistanceSensorImpl.class, "right_distance");
-        frontDistance = hardwareMap.get(VirtualRobotController.DistanceSensorImpl.class, "front_distance");
-        backDistance = hardwareMap.get(VirtualRobotController.DistanceSensorImpl.class, "back_distance");
-
         drivetrain = new util.Drivetrain(hardwareMap);
         drivetrain.resetEncoders();
         imu = new util.IMU(hardwareMap);
         //odometry = hardwareMap.odometry.get("odometry");
-        odometryWrapper = new OdometryWrapper(hardwareMap);
+        //odometryWrapper = new OdometryWrapper(hardwareMap);
         currentCoord = new util.Coordinate(0.0, 0.0, 0.0);
     }
 
@@ -349,61 +344,6 @@ public class WHSRobotImpl {
         encoderValues[0] = currentEncoderValues[0];
         encoderValues[1] = currentEncoderValues[1];
         lastKnownHeading = currentCoord.getHeading();
-    }
-
-    public double[] simGetDistances() {
-        double[] distances = {leftDistance.getDistance(DistanceUnit.MM), rightDistance.getDistance(DistanceUnit.MM), frontDistance.getDistance(DistanceUnit.MM), backDistance.getDistance(DistanceUnit.MM)};
-        for (double dist : distances) {
-            dist += 228.6;
-        }
-        return distances;
-    }
-
-    public void simEstimateCoordinate() {
-        double heading = imu.getHeading() + imu.getImuBias();
-        while (heading > 360) {
-            heading -= 360;
-        }
-        currentCoord.setHeading(Functions.normalizeAngle(heading));
-        double[] distances = simGetDistances();
-
-        boolean robotL = false;
-        boolean robotF = false;
-        if (heading % 45 == 0) {
-            //idk
-        } else if (Math.floor(heading / 45) % 2 == 0) {
-            if (distances[2] < distances[3]) { // F<B
-                robotL = true;
-            }
-            if (distances[0] > distances[1]) { // L>R
-                robotF = true;
-            }
-        } else {
-            if (distances[2] > distances[3]) { // F>B
-                robotL = true;
-            }
-            if (distances[0] < distances[1]) { // L<R
-                robotF = true;
-            }
-        }
-
-        double angle = heading;
-        while (angle >= 90) {
-            angle -= 90;
-        }
-        double x = robotF ? 1828.8 - distances[2] * Functions.cosd(angle) : 1828.8 - distances[1] * Functions.cosd(angle);
-        double y = robotL ? 1828.8 - distances[0] * Functions.cosd(angle) : 1828.8 - distances[1] * Functions.cosd(angle);
-
-        if (heading % 45 == 0) {
-
-        } else if (heading > 45 && heading < 135 || (heading > 225 && heading < 315)) {
-            robotX = y;
-            robotY = x;
-        } else {
-            robotX = x;
-            robotY = y;
-        }
-        currentCoord.setPos(new Position(robotX, robotY));
     }
 }
 
