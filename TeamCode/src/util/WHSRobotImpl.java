@@ -1,6 +1,5 @@
 package util;
 
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Odometry;
 
@@ -14,7 +13,6 @@ public class WHSRobotImpl {
     public util.IMU imu;
     //public Odometry odometry;
     public OdometryWrapper odometryWrapper;
-
     util.Coordinate currentCoord;
     private double targetHeading; //field frame
     public double angleToTargetDebug;
@@ -82,7 +80,8 @@ public class WHSRobotImpl {
         drivetrain.resetEncoders();
         imu = new util.IMU(hardwareMap);
         //odometry = hardwareMap.odometry.get("odometry");
-        //odometryWrapper = new OdometryWrapper(hardwareMap);
+        odometryWrapper = new OdometryWrapper(hardwareMap);
+        odometryWrapper.resetOdometry();
         currentCoord = new util.Coordinate(0.0, 0.0, 0.0);
     }
 
@@ -119,14 +118,8 @@ public class WHSRobotImpl {
                 driveController.setConstants(DRIVE_KP, DRIVE_KI, DRIVE_KD);
                 driveController.calculate(distanceToTarget);
 
-                double power = util.Functions.map(Math.abs(driveController.getOutput()), DEADBAND_DRIVE_TO_TARGET, 1500, DRIVE_MIN, DRIVE_MAX);
+                double power = driveController.getOutput();
 
-                // this stuff may be causing the robot to oscillate around the target position
-                if (distanceToTarget < 0) {
-                    power = -power;
-                } else if (distanceToTarget > 0) {
-                    power = Math.abs(power);
-                }
                 if (Math.abs(distanceToTarget) > DEADBAND_DRIVE_TO_TARGET) {
                     driveToTargetInProgress = true;
                     drivetrain.operateLeft(power);
@@ -174,7 +167,7 @@ public class WHSRobotImpl {
         rotateController.setConstants(ROTATE_KP, ROTATE_KI, ROTATE_KD);
         rotateController.calculate(angleToTarget);
 
-        double power = (rotateController.getOutput() >= 0 ? 1 : -1) * (util.Functions.map(Math.abs(rotateController.getOutput()), 0, 180, ROTATE_MIN, ROTATE_MAX));
+        double power = rotateController.getOutput();
 
         if (Math.abs(angleToTarget) > DEADBAND_ROTATE_TO_TARGET/* && rotateController.getDerivative() < 40*/) {
             drivetrain.operateLeft(-power);
@@ -225,8 +218,8 @@ public class WHSRobotImpl {
 
         //For sim
         odometryEncoderDeltas = odometryWrapper.calculateOdometryDeltas();
-        double deltaXWheels = (-odometryEncoderDeltas[0]/Odometry.ticksPerMM + odometryEncoderDeltas[1]/Odometry.ticksPerMM)/2;
-        double deltaYWheel = odometryEncoderDeltas[2]/Odometry.ticksPerMM;
+        double deltaXWheels = (odometryEncoderDeltas[0]/Odometry.ticksPerMM + odometryEncoderDeltas[1]/Odometry.ticksPerMM)/2;
+        double deltaYWheel = -odometryEncoderDeltas[2]/Odometry.ticksPerMM;
         double deltaTheta = ((odometryEncoderDeltas[1] - odometryEncoderDeltas[0])/Odometry.ticksPerMM) / (Odometry.robotOdometryRadius*2); // in radians
 
         /*double deltaXWheels = (drivetrain.lWheelConverter.encToMM(encoderDeltas[0]) + drivetrain.rWheelConverter.encToMM(encoderDeltas[1]))/2;
@@ -236,12 +229,18 @@ public class WHSRobotImpl {
         double deltaYWheel = drivetrain.backWheelConverter.encToMM(encoderDeltas[2]);
         double deltaTheta = drivetrain.lrWheelConverter.encToMM(encoderDeltas[1] - encoderDeltas[0])/(util.Drivetrain.getTrackWidth());
 */
-        double movementRadius = deltaXWheels / (deltaTheta + .0001);
-        double strafeRadius = deltaYWheel / (deltaTheta + .0001);
+        double deltaXRobot;
+        double deltaYRobot;
+        if (deltaTheta == 0) {
+            deltaXRobot = deltaXWheels;
+            deltaYRobot = deltaYWheel;
+        } else {
+            double movementRadius = deltaXWheels / deltaTheta;
+            double strafeRadius = deltaYWheel / deltaTheta + Odometry.robotOdometryRadius;
 
-        double deltaXRobot = movementRadius * Math.sin(deltaTheta) + strafeRadius * (1 - Math.cos(deltaTheta));
-        double deltaYRobot = strafeRadius * Math.sin(deltaTheta) - movementRadius * (1 - Math.cos(deltaTheta));
-
+            deltaXRobot = movementRadius * Math.sin(deltaTheta) + strafeRadius * (1 - Math.cos(deltaTheta));
+            deltaYRobot = strafeRadius * Math.sin(deltaTheta) - movementRadius * (1 - Math.cos(deltaTheta));
+        }
         util.Position bodyVector = new util.Position(deltaXRobot, deltaYRobot);
         util.Position fieldVector = util.Functions.body2field(bodyVector, currentCoord);
         currentCoord.addX(fieldVector.getX());

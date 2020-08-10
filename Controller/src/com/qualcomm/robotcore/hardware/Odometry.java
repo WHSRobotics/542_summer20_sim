@@ -19,4 +19,6 @@ public interface Odometry extends HardwareDevice {
     int getCWheelCount();
     int[] getAllWheelCounts();
 
+    void reset();
+
 }

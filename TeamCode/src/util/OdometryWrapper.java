@@ -22,4 +22,8 @@ public class OdometryWrapper {
         return deltas;
     }
 
+    public void resetOdometry() {
+        odometry.reset();
+    }
+
 }

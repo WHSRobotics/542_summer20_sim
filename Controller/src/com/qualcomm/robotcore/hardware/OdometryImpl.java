@@ -32,4 +32,9 @@ public class OdometryImpl implements Odometry {
         return encoderCounts;
     }
 
+    public synchronized void reset() {
+        encoderCounts = new int[] {0, 0, 0};
+        encoderDeltas = new int[] {0, 0, 0};
+    }
+
 }

@@ -30,9 +30,10 @@ public class StrafeToTargetTest extends OpMode {
 
     @Override
     public void loop() {
-        robot.estimateHeading();
+//        robot.estimateHeading();
 //        robot.estimatePosition();
-        robot.mecanumEstimatePosition();
+        //robot.mecanumEstimatePosition();
+        robot.deadWheelEstimateCoordinate();
         //robot.estimateHeading();
         motorPowers = strafe1.calculateMotorPowers(robot.getCoordinate());
         robot.drivetrain.operate(motorPowers);
