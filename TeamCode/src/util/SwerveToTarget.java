@@ -47,8 +47,8 @@ public class SwerveToTarget {
         this.lookaheadDistance = lookaheadDistance;
         targetVelocityRateLimiter = new RateLimiter(MAXIMUM_ACCELERATION, 0);
         trackWidth = util.Drivetrain.getTrackWidth();
-        util.PathGenerator pathGenerator = new util.PathGenerator();
-        smoothedPath = pathGenerator.generatePosPath(targetPositions, spacing, weightSmooth);
+        OldPathGenerator oldPathGenerator = new OldPathGenerator();
+        smoothedPath = oldPathGenerator.generatePosPath(targetPositions, spacing, weightSmooth);
         targetCurvatures = calculateTargetCurvatures(smoothedPath);
         targetVelocities = calculateTargetVelocities(smoothedPath, turnSpeed);
         lastTime = System.nanoTime() / 1E9;

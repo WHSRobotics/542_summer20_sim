@@ -53,9 +53,9 @@ public class StrafeToTarget {
         this.lookaheadDistance = lookaheadDistance;
         trackWidth = util.Drivetrain.getTrackWidth();
         wheelBase = util.Drivetrain.getWheelBase();
-        util.PathGenerator pathGenerator = new util.PathGenerator();
-        smoothedPath = pathGenerator.generateCoordPath(targetPositions, spacing, weightSmooth);
-        targetVelocities = pathGenerator.calculateTargetVelocities(velocityConstant, pathMaximumVelocity, MAXIMUM_ACCELERATION);
+        OldPathGenerator oldPathGenerator = new OldPathGenerator();
+        smoothedPath = oldPathGenerator.generateCoordPath(targetPositions, spacing, weightSmooth);
+        targetVelocities = oldPathGenerator.calculateTargetVelocities(velocityConstant, pathMaximumVelocity, MAXIMUM_ACCELERATION);
         //targetAngularVelocities = pathGenerator.calculateTargetAngularVelocities(MAXIMUM_ANGULAR_ACCELERATION, MAXIMUM_ANGULAR_VELOCITY);
         targetAngularVelocities = new double[smoothedPath.length];
         for (int i = smoothedPath.length-2; i >= 0; i--){

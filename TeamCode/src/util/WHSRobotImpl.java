@@ -2,6 +2,8 @@ package util;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Odometry;
+import util.swervetotarget.SwerveFollower;
+import util.swervetotarget.SwervePath;
 
 /**
  * Created by Jason on 10/20/2017.
@@ -38,6 +40,8 @@ public class WHSRobotImpl {
 
     public util.PIDController rotateController = new util.PIDController(ROTATE_KP, ROTATE_KI, ROTATE_KD);
     public util.PIDController driveController = new util.PIDController(DRIVE_KP, DRIVE_KI, DRIVE_KD);
+
+    SwerveFollower swerveFollower;
 
     private boolean firstRotateLoop = true;
     private boolean firstDriveLoop = true;
@@ -343,6 +347,17 @@ public class WHSRobotImpl {
         encoderValues[0] = currentEncoderValues[0];
         encoderValues[1] = currentEncoderValues[1];
         lastKnownHeading = currentCoord.getHeading();
+    }
+    public void updatePath (SwervePath path){
+        swerveFollower = new SwerveFollower(path);
+    }
+
+    public void swerveToTarget(){
+        drivetrain.operate(swerveFollower.calculateMotorPowers(getCoordinate()));
+    }
+
+    public boolean swerveInProgress(){
+        return swerveFollower.inProgress();
     }
 }
 

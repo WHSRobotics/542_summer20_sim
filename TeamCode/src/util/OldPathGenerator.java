@@ -2,7 +2,7 @@ package util;
 
 import java.util.ArrayList;
 
-public class PathGenerator {
+public class OldPathGenerator {
 
     private Position[] smoothedPath;
     int[][] anchorHeadings;
